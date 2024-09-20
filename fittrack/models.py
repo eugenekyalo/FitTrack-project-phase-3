@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 
 Base = declarative_base()
 
@@ -13,9 +13,47 @@ class User(Base):
     weight = Column(Float)
     fitness_level = Column(String)
 
-# Define other models similarly
+    physical_goals = relationship("PhysicalGoal", back_populates="user")
+    workouts = relationship("Workout", back_populates="user")
+    nutrition_logs = relationship("NutritionLog", back_populates="user")
+    mental_health_logs = relationship("MentalHealthLog", back_populates="user")
 
-# Database setup (for app use)
+class PhysicalGoal(Base):
+    __tablename__ = 'physical_goals'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    goal = Column(String, nullable=False)
+
+    user = relationship("User", back_populates="physical_goals")  # Add this line
+
+class Workout(Base):
+    __tablename__ = 'workouts'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    exercise = Column(String)
+    duration = Column(Integer)  # duration in minutes
+    calories_burned = Column(Integer)
+
+    user = relationship("User", back_populates="workouts")
+
+class NutritionLog(Base):
+    __tablename__ = 'nutrition_logs'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    meal = Column(String)
+    calories = Column(Integer)
+
+    user = relationship("User", back_populates="nutrition_logs")
+
+class MentalHealthLog(Base):
+    __tablename__ = 'mental_health_logs'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    entry = Column(String)
+
+    user = relationship("User", back_populates="mental_health_logs")
+
+# Database setup
 engine = create_engine('sqlite:///fittrack.db')
 Base.metadata.create_all(engine)
 
