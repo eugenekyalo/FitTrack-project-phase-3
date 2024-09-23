@@ -1,5 +1,11 @@
 import argparse
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 from fittrack.models import Session, User, PhysicalGoal, Workout, NutritionLog, MentalHealthLog
+
+# Create a new session
+engine = create_engine('sqlite:///fittrack.db')  # Adjust the database URL as needed
+Session = sessionmaker(bind=engine)
 
 def create_user(name, age, height, weight, fitness_level):
     session = Session()
@@ -7,6 +13,21 @@ def create_user(name, age, height, weight, fitness_level):
     session.add(new_user)
     session.commit()
     print(f'User "{name}" created successfully.')
+    session.close()
+
+def update_user(user_id, name, age, height, weight, fitness_level):
+    session = Session()
+    user = session.query(User).get(user_id)
+    if user:
+        user.name = name
+        user.age = age
+        user.height = height
+        user.weight = weight
+        user.fitness_level = fitness_level
+        session.commit()
+        print(f"User {user_id} updated successfully!")
+    else:
+        print(f"User with ID {user_id} not found.")
     session.close()
 
 def set_physical_goal(user_id, goal):
@@ -54,13 +75,17 @@ def calculate_bmi(user_id):
 
 def delete_user(user_id):
     session = Session()
-    user = session.query(User).filter_by(id=user_id).first()
+    # First, delete related physical goals
+    session.query(PhysicalGoal).filter(PhysicalGoal.user_id == user_id).delete()
+
+    # Then delete the user
+    user = session.query(User).get(user_id)
     if user:
         session.delete(user)
         session.commit()
-        print(f'User ID: {user_id} deleted successfully.')
+        print(f"User with ID {user_id} deleted successfully.")
     else:
-        print(f'User ID: {user_id} not found.')
+        print(f"No user found with ID {user_id}.")
     session.close()
 
 def main():
@@ -74,6 +99,15 @@ def main():
     create_user_parser.add_argument('--height', type=float, required=True)
     create_user_parser.add_argument('--weight', type=float, required=True)
     create_user_parser.add_argument('--fitness-level', required=True)
+
+    # Update user
+    update_parser = subparsers.add_parser('update-user')
+    update_parser.add_argument('--user-id', type=int, required=True, help="ID of the user to update")
+    update_parser.add_argument('--name', required=True, help="New name of the user")
+    update_parser.add_argument('--age', type=int, required=True, help="New age of the user")
+    update_parser.add_argument('--height', type=int, required=True, help="New height of the user (in cm)")
+    update_parser.add_argument('--weight', type=int, required=True, help="New weight of the user (in kg)")
+    update_parser.add_argument('--fitness-level', required=True, help="New fitness level of the user")
 
     # Set physical goal
     set_goal_parser = subparsers.add_parser('set-physical-goal')
@@ -110,6 +144,8 @@ def main():
 
     if args.command == 'create-user':
         create_user(args.name, args.age, args.height, args.weight, args.fitness_level)
+    elif args.command == 'update-user':
+        update_user(args.user_id, args.name, args.age, args.height, args.weight, args.fitness_level)
     elif args.command == 'set-physical-goal':
         set_physical_goal(args.user_id, args.goal)
     elif args.command == 'log-workout':
