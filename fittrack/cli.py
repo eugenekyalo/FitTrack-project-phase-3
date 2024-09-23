@@ -52,6 +52,17 @@ def calculate_bmi(user_id):
         print(f'User ID {user_id} not found.')
     session.close()
 
+def delete_user(user_id):
+    session = Session()
+    user = session.query(User).filter_by(id=user_id).first()
+    if user:
+        session.delete(user)
+        session.commit()
+        print(f'User ID: {user_id} deleted successfully.')
+    else:
+        print(f'User ID: {user_id} not found.')
+    session.close()
+
 def main():
     parser = argparse.ArgumentParser(description='FitTrack CLI')
     subparsers = parser.add_subparsers(dest='command')
@@ -91,6 +102,10 @@ def main():
     calculate_bmi_parser = subparsers.add_parser('calculate-bmi')
     calculate_bmi_parser.add_argument('--user-id', type=int, required=True)
 
+    # Delete user
+    delete_user_parser = subparsers.add_parser('delete-user')
+    delete_user_parser.add_argument('--user-id', type=int, required=True)
+
     args = parser.parse_args()
 
     if args.command == 'create-user':
@@ -105,6 +120,8 @@ def main():
         journal_mental_health(args.user_id, args.entry)
     elif args.command == 'calculate-bmi':
         calculate_bmi(args.user_id)
+    elif args.command == 'delete-user':
+        delete_user(args.user_id)
 
 if __name__ == '__main__':
     main()
